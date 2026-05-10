@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Arduino Project",
+      "description": "A saved programming project with blocks",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "blocks": { "type": "string" },
+        "creatorEmail": { "type": "string" },
+        "creatorUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "blocks", "creatorUid"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "User created arduino projects"
+    }
+  }
+}

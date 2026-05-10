@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: #FDCB6E; /* Sun Yellow */
+  --color-secondary: #00CEC9; /* Teal */
+  --color-accent: #FF7675; /* Pinky Red */
+  --color-info: #0984E3; /* Royal Blue */
+  --color-success: #55EFC4; /* Mint */
+  --color-dark: #2D3436;
+  --color-bg-primary: #FFF9E6;
+  --color-bg-canvas: #DFF9FB;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-dark font-sans selection:bg-info/20;
+  }
+}
+
+/* Custom Block Animations */
+@keyframes pop-in {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop {
+  animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Block Connector Shapes */
+.block-connector-top {
+  clip-path: polygon(0% 0%, 30% 0%, 40% 10%, 60% 10%, 70% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+
+.block-connector-bottom {
+  clip-path: polygon(0% 0%, 30% 0%, 40% 10%, 60% 10%, 70% 0%, 100% 0%, 100% 90%, 70% 90%, 60% 100%, 40% 100%, 30% 90%, 0% 90%);
+}
