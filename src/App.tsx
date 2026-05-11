@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DndContext, DragEndEvent, closestCenter, useSensor, useSensors, PointerSensor, TouchSensor, useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, Code, Zap, BookOpen, Share2, Download, Play, Trophy, Rocket, LogIn, LogOut, Copy, Check, Undo, Redo } from 'lucide-react';
+import { Trash2, Code, Zap, BookOpen, Share2, Download, Play, Trophy, Rocket, LogIn, LogOut, Copy, Check, Undo, Redo, Minus, Plus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { 
   signInWithPopup, 
@@ -74,6 +74,7 @@ export default function App() {
   const [ shareId, setShareId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSnapping, setIsSnapping] = useState(false);
+  const [workspaceZoom, setWorkspaceZoom] = useState(1);
   
   // Simulation State
   const [isSimulating, setIsSimulating] = useState(false);
@@ -433,6 +434,12 @@ export default function App() {
     }
   };
 
+  const clearWorkspace = () => {
+    if (blocks.length > 0 && typeof window !== 'undefined' && window.confirm("Are you sure you want to clear the workspace?")) {
+      updateBlocksWithHistory([]);
+    }
+  };
+
   const downloadCode = () => {
     const code = generateArduinoCode(blocks);
     const blob = new Blob([code], { type: 'text/plain' });
@@ -751,13 +758,50 @@ export default function App() {
                   exit={{ opacity: 0, x: 20 }}
                   className="flex-1 flex flex-col"
                 >
+                  {/* Workspace Controls */}
+                  <div className="absolute top-8 left-12 flex gap-4 z-30">
+                    <div className="flex bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border-2 border-gray-100 shadow-xl gap-1">
+                      <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setWorkspaceZoom(prev => Math.max(0.5, prev - 0.1))}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
+                        title="Zoom Out"
+                      >
+                        <Minus size={16} />
+                      </motion.button>
+                      <div className="px-2 flex items-center justify-center min-w-[50px]">
+                        <span className="text-[10px] font-black text-gray-400">{Math.round(workspaceZoom * 100)}%</span>
+                      </div>
+                      <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setWorkspaceZoom(prev => Math.min(2, prev + 0.1))}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
+                        title="Zoom In"
+                      >
+                        <Plus size={16} />
+                      </motion.button>
+                    </div>
+                    
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={clearWorkspace}
+                      className="px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl border-2 border-gray-100 shadow-xl text-[10px] font-black text-accent uppercase tracking-widest flex items-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      Clear All
+                    </motion.button>
+                  </div>
+
                   {/* Drop Area */}
                   <motion.div 
                     id="workspace-area"
                     ref={setNodeRef}
                     animate={isSnapping ? { scale: [1, 1.01, 1], backgroundColor: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0)'] } : {}}
                     transition={{ duration: 0.2 }}
-                    className={`flex-1 rounded-[40px] flex flex-col p-8 overflow-y-auto min-h-0 transition-colors ${blocks.length === 0 ? 'bg-white/30 border-8 border-dashed border-white/50 items-center justify-center' : 'bg-white/10 shadow-inner'}`}
+                    className={`flex-1 rounded-[40px] flex flex-col p-8 overflow-auto min-h-0 transition-colors relative scroll-smooth ${blocks.length === 0 ? 'bg-white/30 border-8 border-dashed border-white/50 items-center justify-center' : 'bg-white/10 shadow-inner'}`}
                   >
                     <AnimatePresence>
                       {blocks.length === 0 ? (
@@ -768,7 +812,11 @@ export default function App() {
                           <h2 className="text-xl font-black text-gray-400">Drag a Magic Block here to start your adventure!</h2>
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-0 items-start ml-12">
+                        <motion.div 
+                          animate={{ scale: workspaceZoom }}
+                          style={{ transformOrigin: 'top left' }}
+                          className="flex flex-col gap-0 items-start ml-12 pb-32 min-w-max"
+                        >
                           {blocks.map((b, i) => (
                             <div key={b.id} className="group relative">
                               <WorkspaceBlock 
@@ -789,7 +837,7 @@ export default function App() {
                               </motion.button>
                             </div>
                           ))}
-                        </div>
+                        </motion.div>
                       )}
                     </AnimatePresence>
                   </motion.div>
