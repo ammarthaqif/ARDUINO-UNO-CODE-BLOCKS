@@ -74,6 +74,15 @@ export default function App() {
   const [ shareId, setShareId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSnapping, setIsSnapping] = useState(false);
+  
+  // Simulation State
+  const [isSimulating, setIsSimulating] = useState(false);
+  const isSimulatingRef = React.useRef(false);
+  const [simulationIndex, setSimulationIndex] = useState(-1);
+  const [pinStates, setPinStates] = useState<Record<number | string, any>>({});
+  const [simulatedDisplayText, setSimulatedDisplayText] = useState("");
+  const [simulatedMotorSpeed, setSimulatedMotorSpeed] = useState(0);
+  const [simulatedServoAngle, setSimulatedServoAngle] = useState(0);
 
   const { setNodeRef } = useDroppable({ id: 'workspace-area' });
 
@@ -342,6 +351,88 @@ export default function App() {
     updateBlocksWithHistory(blocks.filter(b => b.id !== id));
   };
 
+  // Simulation Runner
+  const runSimulation = async () => {
+    if (isSimulating) {
+      isSimulatingRef.current = false;
+      setIsSimulating(false);
+      setSimulationIndex(-1);
+      setPinStates({});
+      setSimulatedDisplayText("");
+      setSimulatedMotorSpeed(0);
+      setSimulatedServoAngle(0);
+      return;
+    }
+
+    setIsSimulating(true);
+    isSimulatingRef.current = true;
+    setWorkspaceTab('hardware');
+    
+    // Simple interpreter for the blocks
+    const executeBlocks = async (blockList: BlockInstance[]) => {
+      for (let i = 0; i < blockList.length; i++) {
+        if (!isSimulatingRef.current) break;
+        
+        const block = blockList[i];
+        setSimulationIndex(i);
+        
+        const params = block.parameters;
+        const pin = params.pin as number;
+
+        switch (block.type) {
+          case 'led_on':
+            setPinStates(prev => ({ ...prev, [pin || 13]: 1 }));
+            break;
+          case 'led_off':
+            setPinStates(prev => ({ ...prev, [pin || 13]: 0 }));
+            break;
+          case 'led_brightness':
+            setPinStates(prev => ({ ...prev, [pin || 13]: (params.value as number) / 255 }));
+            break;
+          case 'delay':
+            await new Promise(resolve => setTimeout(resolve, (params.ms as number) || 1000));
+            break;
+          case 'sound_beep':
+          case 'sound_tone':
+            setPinStates(prev => ({ ...prev, [pin || 9]: 1 }));
+            await new Promise(resolve => setTimeout(resolve, 200));
+            setPinStates(prev => ({ ...prev, [pin || 9]: 0 }));
+            break;
+          case 'motor_run':
+            setSimulatedMotorSpeed((params.speed as number) || 255);
+            setPinStates(prev => ({ ...prev, [pin || 5]: 1 }));
+            break;
+          case 'motor_stop':
+            setSimulatedMotorSpeed(0);
+            setPinStates(prev => ({ ...prev, [pin || 5]: 0 }));
+            break;
+          case 'servo_angle':
+            setSimulatedServoAngle((params.angle as number) || 0);
+            setPinStates(prev => ({ ...prev, [pin || 10]: 1 }));
+            break;
+          case 'display_show':
+            setSimulatedDisplayText(params.text as string || "");
+            break;
+          case 'display_clear':
+            setSimulatedDisplayText("");
+            break;
+        }
+
+        if (block.type !== 'delay') {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+    };
+
+    await executeBlocks(blocks);
+    
+    if (isSimulatingRef.current) {
+      setIsSimulating(false);
+      setSimulationIndex(-1);
+      isSimulatingRef.current = false;
+    }
+  };
+
   const downloadCode = () => {
     const code = generateArduinoCode(blocks);
     const blob = new Blob([code], { type: 'text/plain' });
@@ -593,6 +684,27 @@ export default function App() {
 
           <div className="h-px bg-gray-100 my-2" />
 
+          {blocks.length > 0 && (
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={runSimulation}
+              className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 transition-all font-black text-xs tracking-widest shadow-lg ${isSimulating ? 'bg-accent text-white' : 'bg-primary text-white'}`}
+            >
+              {isSimulating ? (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                  STOP SIMULATION
+                </>
+              ) : (
+                <>
+                  <Play size={18} fill="white" />
+                  RUN SIMULATION
+                </>
+              )}
+            </motion.button>
+          )}
+
           <div>
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Quick Starts</h3>
             <div className="grid grid-cols-1 gap-3">
@@ -665,6 +777,7 @@ export default function App() {
                                 index={i} 
                                 parameters={b.parameters} 
                                 onUpdate={updateBlockParameters}
+                                isExecuting={simulationIndex === i}
                               />
                               <motion.button 
                                 whileHover={{ scale: 1.2, rotate: 15 }}
@@ -695,7 +808,16 @@ export default function App() {
                   </div>
                   <div className="w-full max-w-7xl h-full flex items-center justify-center relative">
                     <div className="w-full max-w-6xl p-6 bg-gray-50 rounded-[40px] border-4 border-dashed border-gray-200 shadow-inner">
-                      <ArduinoBoard activePins={activePins} />
+                      <ArduinoBoard 
+                        activePins={activePins} 
+                        pinStates={pinStates}
+                        displayText={simulatedDisplayText}
+                        motorSpeed={simulatedMotorSpeed}
+                        servoAngle={simulatedServoAngle}
+                        onSensorTrigger={(pin, value) => {
+                          setPinStates(prev => ({ ...prev, [pin]: value }));
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="absolute bottom-8 right-12 flex gap-4">

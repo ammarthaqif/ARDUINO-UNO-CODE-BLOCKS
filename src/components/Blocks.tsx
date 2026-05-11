@@ -2,6 +2,7 @@ import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { motion } from 'motion/react';
 import { BlockType, BLOCK_METADATA } from '../types';
+import * as LucideIcons from 'lucide-react';
 import { 
   Sun, Moon, Clock, RefreshCcw, Zap, Split, Fingerprint, Eye, 
   MessageSquare, Save, CloudDownload, IterationCcw, Play, 
@@ -16,17 +17,17 @@ export function cn(...inputs: any[]) {
 
 // DRAGGABLE TOOLBOX BLOCK
 export const ToolboxBlock = ({ type }: { type: BlockType }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: `toolbox-${type}`,
     data: { type, isToolbox: true }
   });
 
   const metadata = BLOCK_METADATA[type];
-  const Icon = { 
+  const Icon = ({ 
     Sun, Moon, Clock, RefreshCcw, Zap, Split, Fingerprint, Eye, Activity, Scale,
     MessageSquare, Save, CloudDownload, IterationCcw, Play,
     Volume2, Music, Wind, Octagon, Compass, Eraser, Monitor
-  }[metadata.icon as any] || Zap;
+  } as any)[metadata.icon] || Zap;
 
   return (
     <div
@@ -44,14 +45,23 @@ export const ToolboxBlock = ({ type }: { type: BlockType }) => {
   );
 };
 
+interface WorkspaceBlockProps {
+  id: string;
+  type: BlockType;
+  index: number;
+  parameters: Record<string, string | number>;
+  onUpdate?: (id: string, parameters: any) => void;
+  isExecuting?: boolean;
+}
+
 // WORKSPACE INSTANCE
-export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: string; type: BlockType; index: number; parameters: any; onUpdate?: (id: string, params: any) => void }) => {
+export const WorkspaceBlock: React.FC<WorkspaceBlockProps> = ({ id, type, index, parameters, onUpdate, isExecuting }) => {
   const metadata = BLOCK_METADATA[type];
-  const Icon = { 
+  const Icon = ({ 
     Sun, Moon, Clock, RefreshCcw, Zap, Split, Fingerprint, Eye, Activity, Scale,
     MessageSquare, Save, CloudDownload, IterationCcw, Play,
     Volume2, Music, Wind, Octagon, Compass, Eraser, Monitor
-  }[metadata.icon as any] || Zap;
+  } as any)[metadata.icon] || Zap;
 
   const handleChange = (key: string, value: any) => {
     if (onUpdate) {
@@ -63,126 +73,161 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
     <motion.div
       layout
       initial={{ opacity: 0, x: -20, scale: 0.8 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
+      animate={{ 
+        opacity: 1, 
+        x: 0, 
+        scale: isExecuting ? 1.05 : 1,
+        borderColor: isExecuting ? 'rgba(255,255,255,1)' : 'rgba(0,0,0,0.2)',
+        backgroundColor: isExecuting ? '#FFF' : undefined,
+      }}
       exit={{ opacity: 0, scale: 0.5 }}
       className={cn(
-        "relative w-[480px] h-20 rounded-2xl border-b-8 border-black/20 flex items-center justify-between px-8 shadow-xl shadow-black/10 transition-all mb-4",
-        metadata.color,
-        "text-white"
+        "relative w-[480px] h-20 rounded-2xl border-b-8 flex items-center justify-between px-8 shadow-xl shadow-black/10 transition-all mb-4",
+        isExecuting ? "!text-dark shadow-white/20 scale-105 z-20" : (metadata.color + " text-white border-black/20")
       )}
     >
+      {isExecuting && (
+        <motion.div 
+          layoutId="highlight"
+          className="absolute -inset-2 rounded-3xl border-4 border-white/50 animate-pulse pointer-events-none"
+        />
+      )}
       <div className="flex items-center gap-6">
-        <div className="p-4 bg-white/20 rounded-2xl">
-          <Icon size={32} />
+        <div className={cn("p-4 rounded-2xl transition-colors", isExecuting ? "bg-gray-100" : "bg-white/20")}>
+          <Icon size={32} className={isExecuting ? "text-dark" : "text-white"} />
         </div>
         <div>
           <h4 className="font-black text-xl leading-tight tracking-tight">{metadata.label}</h4>
-          <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.2em]">Step #{index + 1}</p>
+          <p className={cn("text-[11px] font-black uppercase tracking-[0.2em]", isExecuting ? "text-gray-400" : "text-white/60")}>Step #{index + 1}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-6">
          {parameters?.pin !== undefined && (
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Target Pin</span>
-             <select 
-               className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-xs font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none appearance-none cursor-pointer hover:bg-black/40 transition-colors shadow-inner" 
-               value={parameters.pin}
-               onChange={(e) => {
-                 const val = e.target.value;
-                 handleChange('pin', val.startsWith('A') ? val : parseInt(val));
-               }}
-             >
-               <optgroup label="Digital Output" className="bg-gray-900 text-white/50 text-[9px]">
-                 {[13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(p => (
-                   <option key={p} value={p} className="text-white font-bold text-sm">Pin D{p}</option>
-                 ))}
-               </optgroup>
-               <optgroup label="Analog Input" className="bg-gray-900 text-white/50 text-[9px]">
-                 {['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].map(p => (
-                   <option key={p} value={p} className="text-white font-bold text-sm">Pin {p}</option>
-                 ))}
-               </optgroup>
-             </select>
-           </div>
-         )}
-         {parameters?.ms !== undefined && (
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Delay Ms</span>
-             <input 
-               type="number" 
-               className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-               value={parameters.ms}
-               onChange={(e) => handleChange('ms', parseInt(e.target.value) || 0)}
-             />
-           </div>
-         )}
-         {parameters?.value !== undefined && (
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Value</span>
-             <input 
-               type="number" 
-               className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-               value={parameters.value}
-               onChange={(e) => handleChange('value', parseInt(e.target.value) || 0)}
-             />
-           </div>
-         )}
-         {parameters?.name !== undefined && (
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Variable</span>
-             <input 
-               type="text" 
-               className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-               value={parameters.name}
-               onChange={(e) => handleChange('name', e.target.value)}
-             />
-           </div>
-         )}
-         {parameters?.text !== undefined && (
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Display Text</span>
-             <input 
-               type="text" 
-               className="w-32 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-               value={parameters.text}
-               onChange={(e) => handleChange('text', e.target.value)}
-             />
-           </div>
-         )}
-         {parameters?.frequency !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Pitch (Hz)</span>
+              <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Target Pin</span>
+              <select 
+                className={cn(
+                  "w-24 border-2 rounded-xl px-2 py-1.5 text-xs font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none appearance-none cursor-pointer transition-colors shadow-inner",
+                  isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white hover:bg-black/40"
+                )} 
+                value={parameters.pin}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleChange('pin', val.startsWith('A') ? val : parseInt(val));
+                }}
+              >
+                <optgroup label="Digital Output" className="bg-gray-900 text-white/50 text-[9px]">
+                  {[13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(p => (
+                    <option key={p} value={p} className="text-white font-bold text-sm">Pin D{p}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Analog Input" className="bg-gray-900 text-white/50 text-[9px]">
+                  {['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].map(p => (
+                    <option key={p} value={p} className="text-white font-bold text-sm">Pin {p}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+          )}
+          {parameters?.ms !== undefined && (
+            <div className="flex flex-col items-center">
+              <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Delay Ms</span>
               <input 
                 type="number" 
-                className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-                value={parameters.frequency}
-                onChange={(e) => handleChange('frequency', parseInt(e.target.value) || 0)}
+                className={cn(
+                  "w-20 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                  isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                )} 
+                value={parameters.ms}
+                onChange={(e) => handleChange('ms', parseInt(e.target.value) || 0)}
               />
             </div>
           )}
-          {parameters?.speed !== undefined && (
+          {parameters?.value !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Power</span>
+              <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Value</span>
               <input 
                 type="number" 
-                className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-                value={parameters.speed}
-                onChange={(e) => handleChange('speed', parseInt(e.target.value) || 0)}
+                className={cn(
+                  "w-20 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                  isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                )} 
+                value={parameters.value}
+                onChange={(e) => handleChange('value', parseInt(e.target.value) || 0)}
               />
             </div>
           )}
-          {parameters?.angle !== undefined && (
+          {parameters?.name !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Angle°</span>
+              <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Variable</span>
               <input 
-                type="number" 
-                className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
-                value={parameters.angle}
-                onChange={(e) => handleChange('angle', parseInt(e.target.value) || 0)}
+                type="text" 
+                className={cn(
+                  "w-24 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                  isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                )} 
+                value={parameters.name}
+                onChange={(e) => handleChange('name', e.target.value)}
               />
             </div>
           )}
+          {parameters?.text !== undefined && (
+            <div className="flex flex-col items-center">
+              <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Display Text</span>
+              <input 
+                type="text" 
+                className={cn(
+                  "w-32 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                  isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                )} 
+                value={parameters.text}
+                onChange={(e) => handleChange('text', e.target.value)}
+              />
+            </div>
+          )}
+          {parameters?.frequency !== undefined && (
+             <div className="flex flex-col items-center">
+               <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Pitch (Hz)</span>
+               <input 
+                 type="number" 
+                 className={cn(
+                   "w-24 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                   isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                 )} 
+                 value={parameters.frequency}
+                 onChange={(e) => handleChange('frequency', parseInt(e.target.value) || 1)}
+               />
+             </div>
+           )}
+           {parameters?.speed !== undefined && (
+             <div className="flex flex-col items-center">
+               <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Power</span>
+               <input 
+                 type="number" 
+                 className={cn(
+                   "w-20 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                   isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                 )} 
+                 value={parameters.speed}
+                 onChange={(e) => handleChange('speed', parseInt(e.target.value) || 0)}
+               />
+             </div>
+           )}
+           {parameters?.angle !== undefined && (
+             <div className="flex flex-col items-center">
+               <span className={cn("text-[9px] font-black uppercase tracking-widest mb-1", isExecuting ? "text-gray-400" : "opacity-50")}>Angle°</span>
+               <input 
+                 type="number" 
+                 className={cn(
+                   "w-20 border-2 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner",
+                   isExecuting ? "bg-gray-100 border-gray-200 text-dark" : "bg-black/30 border-white/10 text-white"
+                 )} 
+                 value={parameters.angle}
+                 onChange={(e) => handleChange('angle', parseInt(e.target.value) || 0)}
+               />
+             </div>
+           )}
       </div>
       
       {/* Visual connectors */}

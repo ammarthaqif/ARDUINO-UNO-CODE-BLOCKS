@@ -1,122 +1,204 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArduinoPin } from '../types';
-import { Lightbulb, Volume2, Cpu, Wind, Monitor } from 'lucide-react';
+import { Lightbulb, Volume2, Cpu, Wind } from 'lucide-react';
 
 interface ArduinoBoardProps {
   activePins: number[];
+  pinStates: Record<number | string, any>;
+  displayText?: string;
+  motorSpeed?: number;
+  servoAngle?: number;
+  onSensorTrigger?: (pin: number | string, value: any) => void;
 }
 
-export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ activePins }) => {
+export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ 
+  activePins, 
+  pinStates, 
+  displayText = "", 
+  motorSpeed = 0, 
+  servoAngle = 0,
+  onSensorTrigger
+}) => {
   return (
-    <div className="relative w-full aspect-[1.4/1] bg-[#0A2E36] rounded-[32px] shadow-2xl p-12 overflow-hidden border-[12px] border-[#143D48]">
-      {/* Clean Grid Background */}
+    <div className="relative w-full aspect-[1.6/1] bg-[#0A2E36] rounded-[32px] shadow-2xl p-12 overflow-hidden border-[12px] border-[#143D48]">
+      {/* High Fidelity PCB Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <svg width="100%" height="100%">
+          <pattern id="pcb-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#pcb-grid)" />
+          {/* Copper Traces */}
+          <path d="M 0 100 Q 100 100 150 150 T 300 200" fill="none" stroke="#FFD700" strokeWidth="1" opacity="0.1" />
+          <path d="M 500 0 Q 500 100 450 150 T 300 300" fill="none" stroke="#FFD700" strokeWidth="1" opacity="0.1" />
+        </svg>
       </div>
 
-      {/* Main Board Label */}
-      <div className="absolute top-8 left-10 flex items-center gap-4">
-        <div className="w-16 h-16 bg-info rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl rotate-[-5deg] border-4 border-white/20">UNO</div>
-        <div className="flex flex-col">
-          <span className="text-info font-mono text-xl uppercase tracking-[0.2em] font-black drop-shadow-md">MakerBlock</span>
-          <span className="text-[10px] text-info/50 font-mono uppercase tracking-[0.5em] font-bold">Hardware Engine v2</span>
+      {/* Virtual 16x2 LCD Display */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-80 h-32 bg-[#2D5A27] rounded-xl border-[8px] border-[#1B3E18] shadow-2xl p-4 flex flex-col font-mono overflow-hidden">
+        <div className="flex-1 bg-[#88B04B]/80 rounded p-2 text-[#0A2E05] text-lg leading-tight shadow-inner overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={displayText}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="break-all"
+            >
+              {displayText || "Arduino Ready..."}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <div className="mt-2 flex justify-between px-1">
+          <div className="w-2 h-2 rounded-full bg-black/20" />
+          <div className="w-2 h-2 rounded-full bg-black/20" />
         </div>
       </div>
 
-      {/* Component Visualizers (Floating based on active pins) */}
-      <div className="absolute bottom-24 left-12 flex gap-6">
+      {/* Main Board Label */}
+      <div className="absolute top-10 left-10 flex items-center gap-4">
+        <div className="w-20 h-20 bg-info rounded-2xl flex items-center justify-center font-black text-3xl text-white shadow-2xl rotate-[-5deg] border-4 border-white/20">UNO</div>
+        <div className="flex flex-col">
+          <span className="text-info font-mono text-2xl uppercase tracking-[0.2em] font-black drop-shadow-md">MakerBlock</span>
+          <span className="text-[12px] text-info/50 font-mono uppercase tracking-[0.5em] font-bold">Simulator Engine 3.0</span>
+        </div>
+      </div>
+
+      {/* Interactive Peripherals */}
+      <div className="absolute bottom-16 left-12 flex gap-8 items-end">
+        {/* Potentiometer / Analog Input */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative w-16 h-16 bg-[#222] rounded-full border-4 border-gray-700 shadow-xl flex items-center justify-center">
+            <motion.div 
+              animate={{ rotate: (pinStates['A0'] || 0) * 0.27 }} // mapped 0-1023 to 0-270
+              className="w-1 h-8 bg-accent rounded-full origin-bottom -translate-y-4"
+            />
+          </div>
+          <input 
+            type="range" 
+            min="0" 
+            max="1023" 
+            value={pinStates['A0'] || 0}
+            onChange={(e) => onSensorTrigger?.('A0', parseInt(e.target.value))}
+            className="w-24 accent-accent"
+          />
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Pin A0</span>
+        </div>
+
+        {/* Push Button */}
+        <div className="flex flex-col items-center gap-3">
+          <motion.button
+            whileTap={{ scale: 0.9, y: 2 }}
+            onMouseDown={() => onSensorTrigger?.(2, 1)}
+            onMouseUp={() => onSensorTrigger?.(2, 0)}
+            onMouseLeave={() => onSensorTrigger?.(2, 0)}
+            className="w-14 h-14 bg-[#EE4266] rounded-full border-b-8 border-r-4 border-black/30 shadow-xl active:border-b-0 active:translate-y-2 flex items-center justify-center"
+          >
+            <div className="w-10 h-10 rounded-full border-4 border-white/10" />
+          </motion.button>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Pin D2</span>
+        </div>
+
+        {/* RGB LED (mapped to favorite pins) */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center justify-center relative">
+            <div className="w-1 h-8 bg-gray-400 absolute bottom-0 translate-y-full flex gap-1">
+              <div className="w-0.5 h-full bg-gray-500" />
+              <div className="w-0.5 h-full bg-gray-500" />
+              <div className="w-0.5 h-full bg-gray-500" />
+            </div>
+            <motion.div 
+              animate={{ 
+                backgroundColor: pinStates[13] || pinStates[12] || pinStates[11] ? '#FFF' : '#333',
+                boxShadow: pinStates[13] ? '0 0 40px #EE4266' : pinStates[12] ? '0 0 40px #3BCEAC' : pinStates[11] ? '0 0 40px #0984E3' : 'none'
+              }}
+              className="w-10 h-12 rounded-t-full rounded-b-lg shadow-lg border-2 border-white/20" 
+            />
+          </div>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">RGB LED</span>
+        </div>
+      </div>
+
+      {/* Component Visualizers (Expanded) */}
+      <div className="absolute top-1/2 right-12 -translate-y-1/2 flex flex-col gap-6">
         <AnimatePresence>
-          {activePins.includes(13) && (
-            <ComponentSprite key="led" icon={<Lightbulb size={24} />} color="text-yellow-400" label="D13 LED" />
+          {motorSpeed > 0 && (
+            <ComponentSprite 
+              key="motor" 
+              icon={<Wind size={32} />} 
+              color="text-emerald-400" 
+              label={`Motor: ${motorSpeed}`} 
+              animate="spin"
+              speed={motorSpeed}
+            />
           )}
-          {(activePins.includes(9) || activePins.includes(8)) && (
-            <ComponentSprite key="buzzer" icon={<Volume2 size={24} />} color="text-sky-400" label="Buzzer" />
+          {servoAngle !== 0 && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-24 h-24 bg-[#1a1a1a] rounded-2xl border-4 border-gray-700 relative overflow-hidden flex items-center justify-center">
+                 <motion.div 
+                   animate={{ rotate: servoAngle }}
+                   className="w-16 h-4 bg-gray-300 rounded-full"
+                 />
+              </div>
+              <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Servo: {servoAngle}°</span>
+            </div>
           )}
-          {(activePins.includes(5) || activePins.includes(6)) && (
-            <ComponentSprite key="motor" icon={<Wind size={24} />} color="text-emerald-400" label="Motor" animate="spin" />
-          )}
-          {activePins.some(p => p >= 18) && (
-            <ComponentSprite key="sensor" icon={<Cpu size={24} />} color="text-pink-400" label="Sensors" />
-          )}
-          {activePins.some(p => p === 10 || p === 11) && (
-            <ComponentSprite key="servo" icon={<Cpu size={24} className="rotate-45" />} color="text-orange-400" label="Servo" />
+          {pinStates[9] === 1 && (
+            <ComponentSprite key="buzzer" icon={<Volume2 size={32} />} color="text-sky-400" label="Buzzer Active" />
           )}
         </AnimatePresence>
       </div>
 
       {/* Digital Pins Header */}
-      <div className="absolute top-[30px] right-12 flex items-center gap-6 bg-dark/20 p-2 rounded-xl border border-white/5">
+      <div className="absolute top-10 right-10 flex items-center gap-6 bg-dark/40 backdrop-blur-sm p-3 rounded-2xl border-4 border-white/5 shadow-2xl">
         <div className="flex flex-col gap-2">
-          <span className="text-[8px] font-black text-white/30 uppercase text-center">Group A</span>
-          <div className="flex flex-col gap-2">
+          <span className="text-[9px] font-black text-white/20 uppercase text-center tracking-tighter">13-8</span>
+          <div className="flex flex-col gap-3">
             {[13, 12, 11, 10, 9, 8].map(p => (
-              <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
+              <PinHeader key={p} label={p.toString()} isActive={pinStates[p] > 0} value={pinStates[p]} />
             ))}
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <span className="text-[8px] font-black text-white/30 uppercase text-center">Group B</span>
-          <div className="flex flex-col gap-2">
+          <span className="text-[9px] font-black text-white/20 uppercase text-center tracking-tighter">7-2</span>
+          <div className="flex flex-col gap-3">
             {[7, 6, 5, 4, 3, 2].map(p => (
-              <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
+              <PinHeader key={p} label={p.toString()} isActive={pinStates[p] > 0} value={pinStates[p]} />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Analog Pins Header (Bottom Center-ish) */}
-      <div className="absolute bottom-12 right-12 flex flex-col gap-2 bg-dark/20 p-2 rounded-xl border border-white/5">
-        <span className="text-[8px] font-black text-white/30 uppercase text-center tracking-widest">Analog Input</span>
-        <div className="flex gap-2">
+      {/* Analog Pins Header */}
+      <div className="absolute bottom-10 right-10 flex flex-col gap-2 bg-dark/40 backdrop-blur-sm p-3 rounded-2xl border-4 border-white/5 shadow-2xl">
+        <span className="text-[9px] font-black text-white/20 uppercase text-center tracking-widest">Analog IN</span>
+        <div className="flex gap-3">
           {[5, 4, 3, 2, 1, 0].map(p => (
-            <PinHeader key={`A${p}`} label={`A${p}`} isActive={activePins.includes(18 + p)} />
+            <PinHeader key={`A${p}`} label={`A${p}`} isActive={pinStates[`A${p}`] > 0} value={pinStates[`A${p}`]} />
           ))}
         </div>
       </div>
 
-      {/* Main Microcontroller Chip */}
+      {/* Main IC Chip */}
       <motion.div 
         animate={activePins.length > 0 ? { 
-          boxShadow: ['0 0 20px rgba(0,210,255,0.1)', '0 0 60px rgba(0,210,255,0.3)', '0 0 20px rgba(0,210,255,0.1)'],
-          borderColor: ['#374151', '#00d2ff', '#374151']
+          borderColor: ['#374151', '#00d2ff', '#374151'],
+          boxShadow: ['0 0 20px rgba(0,210,255,0.1)', '0 0 50px rgba(0,210,255,0.2)', '0 0 20px rgba(0,210,255,0.1)']
         } : {}}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 bg-[#111] rounded-2xl border-4 border-gray-700 flex flex-col items-center justify-center shadow-2xl overflow-hidden"
+        transition={{ duration: 1.5, repeat: Infinity }}
+        className="absolute left-1/2 bottom-12 -translate-x-1/2 w-64 h-24 bg-[#111] rounded-2xl border-4 border-gray-700 flex flex-col items-center justify-center shadow-2xl"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-info/20 to-transparent" />
-        <div className="w-32 h-3 bg-[#222] mb-4 rounded-full shadow-inner" />
-        <span className="text-[12px] text-gray-500 font-mono uppercase tracking-[0.2em] font-black">ATmega328P</span>
-        <div className="grid grid-cols-2 gap-6 mt-8">
+        <span className="text-[14px] text-gray-500 font-mono uppercase tracking-[0.4em] font-black">ATmega328P-PU</span>
+        <div className="absolute top-2 w-full flex justify-between px-6">
           {[1,2,3,4,5,6,7,8].map(i => (
-            <motion.div 
-              key={i} 
-              animate={activePins.length > 0 ? { 
-                backgroundColor: ['#4b5563', '#00d2ff', '#4b5563'],
-                scale: [1, 1.2, 1]
-              } : {}}
-              transition={{ duration: 0.6, delay: i * 0.08, repeat: activePins.length > 0 ? Infinity : 0 }}
-              className="w-2.5 h-2.5 bg-gray-600 rounded-full shadow-lg" 
-            />
+             <div key={i} className="w-1.5 h-3 bg-[#222] rounded-t" />
           ))}
         </div>
-        <div className="mt-auto mb-4 px-4 py-1 bg-info/5 rounded-full border border-info/10">
-          <span className="text-[8px] font-black text-info uppercase tracking-widest">Processing...</span>
+        <div className="absolute bottom-2 w-full flex justify-between px-6">
+          {[1,2,3,4,5,6,7,8].map(i => (
+             <div key={i} className="w-1.5 h-3 bg-[#222] rounded-b" />
+          ))}
         </div>
       </motion.div>
-
-      {/* Power Components */}
-      <div className="absolute left-8 bottom-8 flex gap-3">
-        <div className="w-10 h-14 bg-[#333] rounded shadow-inner border border-white/5" />
-        <div className="w-14 h-8 bg-[#444] rounded shadow-inner border border-white/5" />
-      </div>
-
-      {/* Animated LEDs for Active Pins */}
-      <div className="absolute right-4 top-[80px] flex flex-col gap-[25px] pt-1.5">
-        {[13, 12, 11, 10, 9, 8].map(p => (
-          <LED key={p} color="#3BCEAC" active={activePins.includes(p)} />
-        ))}
-      </div>
     </div>
   );
 };
@@ -126,50 +208,36 @@ interface ComponentSpriteProps {
   color: string;
   label: string;
   animate?: 'spin' | 'blink';
+  speed?: number;
 }
 
-const ComponentSprite: React.FC<ComponentSpriteProps> = ({ icon, color, label, animate }) => (
+const ComponentSprite: React.FC<ComponentSpriteProps> = ({ icon, color, label, animate, speed = 1 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20, scale: 0.5 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -20, scale: 0.5 }}
-    className="flex flex-col items-center gap-1"
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: 20 }}
+    className="flex flex-col items-center gap-2"
   >
     <motion.div 
       animate={animate === 'spin' ? { rotate: 360 } : {}}
-      transition={animate === 'spin' ? { duration: 1, repeat: Infinity, ease: 'linear' } : {}}
-      className={`w-10 h-10 bg-[#1A3A42] rounded-xl flex items-center justify-center border-2 border-[#244D58] shadow-lg ${color}`}
+      transition={animate === 'spin' ? { duration: speed > 200 ? 0.2 : (speed > 100 ? 0.5 : 1), repeat: Infinity, ease: 'linear' } : {}}
+      className={`w-20 h-20 bg-dark/50 rounded-[2rem] flex items-center justify-center border-4 border-white/5 shadow-2xl backdrop-blur-md ${color}`}
     >
       {icon}
     </motion.div>
-    <span className="text-[8px] font-black uppercase text-white/40 tracking-widest">{label}</span>
+    <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">{label}</span>
   </motion.div>
 );
 
 interface PinHeaderProps {
   label: string;
   isActive?: boolean;
+  value?: any;
 }
 
-const PinHeader: React.FC<PinHeaderProps> = ({ label, isActive }) => (
-  <div className={`w-8 h-6 rounded flex items-center justify-center text-[8px] font-bold font-mono transition-all duration-300 ${isActive ? 'bg-secondary text-dark shadow-[0_0_15px_rgba(59,206,172,0.8)] scale-110 z-10' : 'bg-dark/50 text-gray-500'}`}>
-    {label}
+const PinHeader: React.FC<PinHeaderProps> = ({ label, isActive, value }) => (
+  <div className={`w-10 h-8 rounded-lg flex flex-col items-center justify-center text-[9px] font-black font-mono transition-all duration-300 ${isActive ? 'bg-secondary text-dark shadow-[0_0_20px_rgba(59,206,172,0.6)] scale-110 z-10' : 'bg-dark/30 text-white/20'}`}>
+    <span>{label}</span>
+    {isActive && <span className="text-[7px] opacity-60 leading-none">{typeof value === 'number' && value > 1 ? value : ''}</span>}
   </div>
-);
-
-interface LEDProps {
-  color: string;
-  active?: boolean;
-}
-
-const LED: React.FC<LEDProps> = ({ color, active }) => (
-  <motion.div
-    initial={false}
-    animate={{ 
-      backgroundColor: active ? color : '#333',
-      scale: active ? 1.5 : 1,
-      boxShadow: active ? `0 0 25px ${color}, 0 0 10px rgba(59,206,172,0.5)` : 'none'
-    }}
-    className="w-2.5 h-2.5 rounded-full"
-  />
 );
