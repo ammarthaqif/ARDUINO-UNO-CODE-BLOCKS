@@ -85,12 +85,25 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          {parameters?.pin !== undefined && (
            <div className="flex flex-col items-center">
              <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Pin</span>
-             <input 
-               type="text" 
-               className="w-12 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+             <select 
+               className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-[10px] font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none appearance-none cursor-pointer hover:bg-black/30" 
                value={parameters.pin}
-               onChange={(e) => handleChange('pin', e.target.value)}
-             />
+               onChange={(e) => {
+                 const val = e.target.value;
+                 handleChange('pin', val.startsWith('A') ? val : parseInt(val));
+               }}
+             >
+               <optgroup label="Digital Pins" className="bg-gray-800 text-white/50 text-[8px]">
+                 {[13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(p => (
+                   <option key={p} value={p} className="text-white text-xs">Digital {p}</option>
+                 ))}
+               </optgroup>
+               <optgroup label="Analog Pins" className="bg-gray-800 text-white/50 text-[8px]">
+                 {['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].map(p => (
+                   <option key={p} value={p} className="text-white text-xs">Analog {p}</option>
+                 ))}
+               </optgroup>
+             </select>
            </div>
          )}
          {parameters?.ms !== undefined && (

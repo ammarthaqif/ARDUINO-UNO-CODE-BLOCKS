@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, closestCenter, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, Code, Zap, BookOpen, Share2, Download, Play, Trophy, Rocket, LogIn, LogOut, Copy, Check, Undo, Redo } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -73,6 +73,20 @@ export default function App() {
   const [ shareId, setShareId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSnapping, setIsSnapping] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
 
   // Sound effect for snapping
   const playSnapSound = () => {
@@ -262,8 +276,15 @@ export default function App() {
   // Track active pins for the visualizer
   const activePins = Array.from(new Set(
     blocks
-      .filter(b => ['led_on', 'sound_tone', 'sound_beep', 'motor_run', 'servo_angle'].includes(b.type))
-      .map(b => (b.parameters.pin as number) || (b.type === 'servo_angle' ? 10 : (b.type.includes('sound') ? 9 : 13)))
+      .filter(b => ['led_on', 'sound_tone', 'sound_beep', 'motor_run', 'servo_angle', 'sensor_light', 'sensor_touch'].includes(b.type))
+      .map(b => {
+        const pin = b.parameters.pin;
+        if (typeof pin === 'string' && pin.startsWith('A')) {
+          const num = parseInt(pin.substring(1));
+          return isNaN(num) ? 18 : 18 + num;
+        }
+        return (pin as number) || (b.type === 'servo_angle' ? 10 : (b.type.includes('sound') ? 9 : 13));
+      })
   ));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -332,37 +353,32 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-bg-primary overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="h-[80px] bg-white border-b-8 border-primary flex items-center justify-between px-8 z-10 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-accent rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_#D63031] rotate-[-3deg]">
-            <Rocket className="text-white fill-white" size={30} />
+      <header className="h-[80px] bg-white border-b-8 border-primary flex items-center justify-between px-4 md:px-8 z-10 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-3 md:gap-4 shrink-0">
+          <div className="w-10 h-10 md:w-14 md:h-14 bg-accent rounded-xl md:rounded-2xl flex items-center justify-center shadow-[2px_2px_0px_#D63031] md:shadow-[4px_4px_0px_#D63031] rotate-[-3deg]">
+            <Rocket className="text-white fill-white w-6 h-6 md:w-8 md:h-8" />
           </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-dark">Arduino Uno <span className="text-info tracking-wider">Code Blocks</span></h1>
-            <div className="flex items-center gap-2">
+          <div className="hidden sm:block">
+            <h1 className="text-lg md:text-2xl font-black uppercase tracking-tight text-dark leading-none">Arduino Uno <span className="text-info tracking-wider">Blocks</span></h1>
+            <div className="flex items-center gap-2 mt-1">
               <input 
                 type="text"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                className="bg-success/10 text-success px-3 py-1 rounded-lg text-sm font-extrabold focus:outline-none focus:ring-2 focus:ring-success/50 border-none w-64"
+                className="bg-success/10 text-success px-2 py-0.5 rounded-md text-xs font-extrabold focus:outline-none focus:ring-1 focus:ring-success/50 border-none w-32 md:w-48"
                 placeholder="Project Name..."
               />
-              {projectMetadata.updatedAt && (
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden md:inline">
-                  Last edit: {new Date(projectMetadata.updatedAt.seconds * 1000).toLocaleString()}
-                </span>
-              )}
             </div>
           </div>
         </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+          <div className="flex items-center gap-2 md:gap-4 ml-4">
+            <div className="hidden lg:flex items-center bg-gray-100 p-1 rounded-xl gap-1">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setRightPanelTab('board')}
-                className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white shadow-sm text-secondary' : 'text-gray-500'}`}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white shadow-sm text-secondary' : 'text-gray-500'}`}
               >
                 BOARD
               </motion.button>
@@ -370,15 +386,15 @@ export default function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setRightPanelTab('code')}
-                className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-white shadow-sm text-info' : 'text-gray-500'}`}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-white shadow-sm text-info' : 'text-gray-500'}`}
               >
                 CODE
               </motion.button>
             </div>
             
-            <div className="h-10 w-px bg-gray-100 mx-2" />
+            <div className="hidden md:block h-8 w-px bg-gray-100 mx-1" />
 
-            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-0.5 md:gap-1">
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -392,69 +408,59 @@ export default function App() {
                   setProjectMetadata({});
                 }
               }}
-              className="px-4 py-2 hover:bg-white hover:shadow-sm rounded-lg text-[10px] font-black text-dark tracking-widest transition-all"
+              className="px-2 md:px-3 py-1.5 hover:bg-white hover:shadow-sm rounded-lg text-[8px] md:text-[9px] font-black text-dark tracking-tighter md:tracking-widest transition-all uppercase"
             >
-              NEW PROJECT
+              NEW
             </motion.button>
-            <div className="w-px h-6 bg-gray-200 mx-1" />
+            <div className="w-px h-4 md:h-6 bg-gray-200 mx-0.5 md:mx-1" />
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleUndo}
               disabled={historyIndex === 0}
-              className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              title="Undo (Ctrl+Z)"
+              className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              title="Undo"
             >
-              <Undo size={18} />
+              <Undo size={14} />
             </motion.button>
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleRedo}
               disabled={historyIndex === history.length - 1}
-              className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              title="Redo (Ctrl+Y)"
+              className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              title="Redo"
             >
-              <Redo size={18} />
+              <Redo size={14} />
             </motion.button>
           </div>
 
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab('tutorial')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${activeTab === 'tutorial' ? 'bg-info text-white shadow-[4px_4px_0px_#0984E3]' : 'hover:bg-gray-100 text-gray-500'}`}
-          >
-            <BookOpen size={20} />
-            LEARN
-          </motion.button>
-          
-          <div className="h-10 w-px bg-gray-100 mx-2" />
+          <div className="h-8 w-px bg-gray-100 mx-1 hidden sm:block" />
 
           {user ? (
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-50">
                 <img src={user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.uid}`} alt="avatar" className="w-full h-full object-cover" />
               </div>
               <motion.button 
-                whileHover={{ scale: 1.2, rotate: 10 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleLogout}
-                className="p-2 text-gray-300 hover:text-accent transition-colors"
+                className="p-1.5 text-gray-300 hover:text-accent transition-colors"
                 title="Sign out"
               >
-                <LogOut size={20} />
+                <LogOut size={16} />
               </motion.button>
             </div>
           ) : (
             <motion.button 
-              whileHover={{ scale: 1.05, translateY: 2 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleLogin}
-              className="flex items-center gap-2 px-6 py-3 bg-dark text-white font-bold rounded-2xl shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] transition-all"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-dark text-white font-bold rounded-xl shadow-[2px_2px_0px_#000] md:shadow-[3px_3px_0px_#000] text-[10px] md:text-sm transition-all whitespace-nowrap"
             >
-              <LogIn size={20} />
-              JOIN CLUB
+              <LogIn size={16} />
+              JOIN
             </motion.button>
           )}
 
@@ -462,25 +468,25 @@ export default function App() {
             <button 
               onClick={saveProject}
               disabled={isSaving}
-              className={`px-6 py-3 bg-secondary text-white font-bold rounded-2xl shadow-[4px_4px_0px_#00B894] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#00B894] transition-all flex items-center gap-2 ${isSaving ? 'opacity-50' : ''}`}
+              className={`px-3 md:px-5 py-2 bg-secondary text-white font-bold rounded-xl shadow-[2px_2px_0px_#00B894] md:shadow-[3px_3px_0px_#00B894] transition-all flex items-center gap-1.5 text-[10px] md:text-sm whitespace-nowrap ${isSaving ? 'opacity-50' : ''}`}
             >
-              {isSaving ? <Zap className="animate-spin" size={20} /> : <span>💾</span>} SAVE
+              {isSaving ? <Zap className="animate-spin" size={16} /> : <span>💾</span>} SAVE
             </button>
           )}
           
           <motion.button 
-            whileHover={{ scale: 1.05, translateY: 2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={downloadCode}
-            className="px-6 py-3 bg-[#6C5CE7] text-white font-bold rounded-2xl shadow-[4px_4px_0px_#4834D4] hover:shadow-[2px_2px_0px_#4834D4] flex items-center gap-2 transition-all uppercase"
+            className="px-3 md:px-5 py-2 bg-[#6C5CE7] text-white font-bold rounded-xl shadow-[2px_2px_0px_#4834D4] md:shadow-[3px_3px_0px_#4834D4] flex items-center gap-1.5 transition-all text-[10px] md:text-sm whitespace-nowrap"
           >
-            <span>🚀</span> UPLOAD TO ARDUINO
+            <span>🚀</span> UPLOAD
           </motion.button>
         </div>
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+        <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter} sensors={sensors}>
           {/* Toolbox Sidebar (Left) */}
           <aside className="w-[280px] bg-white border-r-8 border-[#FAB1A0] p-4 flex flex-col gap-6 shrink-0 overflow-y-auto">
           <div className="space-y-6">
