@@ -9,58 +9,61 @@ interface ArduinoBoardProps {
 
 export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ activePins }) => {
   return (
-    <div className="relative w-full aspect-[1.4/1] bg-[#0A2E36] rounded-2xl shadow-2xl p-8 overflow-hidden border-4 border-[#143D48]">
+    <div className="relative w-full aspect-[1.4/1] bg-[#0A2E36] rounded-[32px] shadow-2xl p-12 overflow-hidden border-[12px] border-[#143D48]">
       {/* Circuit Trace Background */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <svg width="100%" height="100%" className="stroke-white">
-          <path d="M0 50 L100 50 M50 0 L50 100" strokeWidth="2" fill="none" />
-          <path d="M20 20 L80 80 M80 20 L20 80" strokeWidth="1" fill="none" />
-          <circle cx="50" cy="50" r="40" strokeWidth="1" fill="none" />
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <svg width="100%" height="100%" className="stroke-white/20">
+          <path d="M0 100 L200 100 M100 0 L100 200" strokeWidth="4" fill="none" />
+          <path d="M40 40 L160 160 M160 40 L40 160" strokeWidth="2" fill="none" />
+          <circle cx="100" cy="100" r="80" strokeWidth="2" fill="none" />
         </svg>
       </div>
 
       {/* Main Board Label */}
-      <div className="absolute top-4 left-6 flex items-center gap-2">
-        <div className="w-10 h-10 bg-info rounded-lg flex items-center justify-center font-bold text-white shadow-lg">UNO</div>
+      <div className="absolute top-8 left-10 flex items-center gap-4">
+        <div className="w-16 h-16 bg-info rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl rotate-[-5deg] border-4 border-white/20">UNO</div>
         <div className="flex flex-col">
-          <span className="text-info/80 font-mono text-xs uppercase tracking-widest font-black">MakerBlock</span>
-          <span className="text-[8px] text-info/50 font-mono uppercase tracking-[0.3em]">Hardware Visualizer</span>
+          <span className="text-info font-mono text-xl uppercase tracking-[0.2em] font-black drop-shadow-md">MakerBlock</span>
+          <span className="text-[10px] text-info/50 font-mono uppercase tracking-[0.5em] font-bold">Hardware Engine v2</span>
         </div>
       </div>
 
       {/* Component Visualizers (Floating based on active pins) */}
-      <div className="absolute bottom-20 left-10 flex gap-4">
+      <div className="absolute bottom-24 left-12 flex gap-6">
         <AnimatePresence>
           {activePins.includes(13) && (
-            <ComponentSprite key="led" icon={<Lightbulb size={16} />} color="text-yellow-400" label="D13 LED" />
+            <ComponentSprite key="led" icon={<Lightbulb size={24} />} color="text-yellow-400" label="D13 LED" />
           )}
           {(activePins.includes(9) || activePins.includes(8)) && (
-            <ComponentSprite key="buzzer" icon={<Volume2 size={16} />} color="text-sky-400" label="Buzzer" />
+            <ComponentSprite key="buzzer" icon={<Volume2 size={24} />} color="text-sky-400" label="Buzzer" />
           )}
           {(activePins.includes(5) || activePins.includes(6)) && (
-            <ComponentSprite key="motor" icon={<Wind size={16} />} color="text-emerald-400" label="Motor" animate="spin" />
+            <ComponentSprite key="motor" icon={<Wind size={24} />} color="text-emerald-400" label="Motor" animate="spin" />
           )}
-          {activePins.some(p => p >= 18) && ( // A0-A5 mapped to 18-23 internally usually
-            <ComponentSprite key="sensor" icon={<Cpu size={16} />} color="text-pink-400" label="Sensor Input" />
+          {activePins.some(p => p >= 18) && (
+            <ComponentSprite key="sensor" icon={<Cpu size={24} />} color="text-pink-400" label="Sensors" />
+          )}
+          {activePins.some(p => p === 10 || p === 11) && (
+            <ComponentSprite key="servo" icon={<Cpu size={24} className="rotate-45" />} color="text-orange-400" label="Servo" />
           )}
         </AnimatePresence>
       </div>
 
       {/* Digital Pins Header */}
-      <div className="absolute top-[80px] right-8 flex flex-col gap-2">
+      <div className="absolute top-[120px] right-12 flex flex-col gap-3">
         {[13, 12, 11, 10, 9, 8].map(p => (
           <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
         ))}
       </div>
       
-      <div className="absolute top-[80px] right-20 flex flex-col gap-2">
+      <div className="absolute top-[120px] right-32 flex flex-col gap-3">
         {[7, 6, 5, 4, 3, 2].map(p => (
           <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
         ))}
       </div>
 
       {/* Analog Pins Header (Bottom Right) */}
-      <div className="absolute bottom-6 right-8 flex gap-2">
+      <div className="absolute bottom-12 right-12 flex gap-3">
         {[5, 4, 3, 2, 1, 0].map(p => (
           <PinHeader key={`A${p}`} label={`A${p}`} isActive={activePins.includes(18 + p)} />
         ))}
@@ -68,21 +71,31 @@ export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ activePins }) => {
 
       {/* Main Microcontroller Chip */}
       <motion.div 
-        animate={activePins.length > 0 ? { boxShadow: ['0 0 10px rgba(0,210,255,0.2)', '0 0 30px rgba(0,210,255,0.4)', '0 0 10px rgba(0,210,255,0.2)'] } : {}}
+        animate={activePins.length > 0 ? { 
+          boxShadow: ['0 0 20px rgba(0,210,255,0.1)', '0 0 60px rgba(0,210,255,0.3)', '0 0 20px rgba(0,210,255,0.1)'],
+          borderColor: ['#374151', '#00d2ff', '#374151']
+        } : {}}
         transition={{ duration: 2, repeat: Infinity }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-36 bg-[#1A1A1A] rounded-md border-2 border-gray-700 flex flex-col items-center justify-center shadow-lg"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 bg-[#111] rounded-2xl border-4 border-gray-700 flex flex-col items-center justify-center shadow-2xl overflow-hidden"
       >
-        <div className="w-16 h-2 bg-[#2a2a2a] mb-2 rounded-full" />
-        <span className="text-[8px] text-gray-500 font-mono uppercase tracking-tighter">ATmega328P</span>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          {[1,2,3,4,5,6].map(i => (
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-info/20 to-transparent" />
+        <div className="w-32 h-3 bg-[#222] mb-4 rounded-full shadow-inner" />
+        <span className="text-[12px] text-gray-500 font-mono uppercase tracking-[0.2em] font-black">ATmega328P</span>
+        <div className="grid grid-cols-2 gap-6 mt-8">
+          {[1,2,3,4,5,6,7,8].map(i => (
             <motion.div 
               key={i} 
-              animate={activePins.length > 0 ? { backgroundColor: ['#4b5563', '#00d2ff', '#4b5563'] } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1, repeat: activePins.length > 0 ? Infinity : 0 }}
-              className="w-1.5 h-1.5 bg-gray-600 rounded-full" 
+              animate={activePins.length > 0 ? { 
+                backgroundColor: ['#4b5563', '#00d2ff', '#4b5563'],
+                scale: [1, 1.2, 1]
+              } : {}}
+              transition={{ duration: 0.6, delay: i * 0.08, repeat: activePins.length > 0 ? Infinity : 0 }}
+              className="w-2.5 h-2.5 bg-gray-600 rounded-full shadow-lg" 
             />
           ))}
+        </div>
+        <div className="mt-auto mb-4 px-4 py-1 bg-info/5 rounded-full border border-info/10">
+          <span className="text-[8px] font-black text-info uppercase tracking-widest">Processing...</span>
         </div>
       </motion.div>
 

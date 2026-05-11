@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, closestCenter, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, closestCenter, useSensor, useSensors, PointerSensor, TouchSensor, useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, Code, Zap, BookOpen, Share2, Download, Play, Trophy, Rocket, LogIn, LogOut, Copy, Check, Undo, Redo } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -64,7 +64,8 @@ export default function App() {
   const [blocks, setBlocks] = useState<BlockInstance[]>([]);
   const [history, setHistory] = useState<BlockInstance[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [rightPanelTab, setRightPanelTab] = useState<'code' | 'board' | 'tutorial'>('code');
+  const [workspaceTab, setWorkspaceTab] = useState<'blocks' | 'hardware'>('blocks');
+  const [rightPanelTab, setRightPanelTab] = useState<'code' | 'tutorial'>('code');
   const [activeTab, setActiveTab] = useState<'workspace' | 'tutorial'>('workspace');
   const [projectTitle, setProjectTitle] = useState("My Arduino Project");
   const [projectMetadata, setProjectMetadata] = useState<{ createdAt?: any, updatedAt?: any }>({});
@@ -73,6 +74,8 @@ export default function App() {
   const [ shareId, setShareId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSnapping, setIsSnapping] = useState(false);
+
+  const { setNodeRef } = useDroppable({ id: 'workspace-area' });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -377,11 +380,24 @@ export default function App() {
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setRightPanelTab('board')}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white shadow-sm text-secondary' : 'text-gray-500'}`}
+                onClick={() => setWorkspaceTab('blocks')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${workspaceTab === 'blocks' ? 'bg-white shadow-sm text-primary' : 'text-gray-500'}`}
               >
-                BOARD
+                WORKSPACE
               </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setWorkspaceTab('hardware')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${workspaceTab === 'hardware' ? 'bg-white shadow-sm text-secondary' : 'text-gray-500'}`}
+              >
+                HARDWARE
+              </motion.button>
+            </div>
+            
+            <div className="hidden md:block h-8 w-px bg-gray-100 mx-1" />
+
+            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-0.5 md:gap-1">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -390,11 +406,15 @@ export default function App() {
               >
                 CODE
               </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setRightPanelTab('tutorial')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${rightPanelTab === 'tutorial' ? 'bg-white shadow-sm text-accent' : 'text-gray-500'}`}
+              >
+                LIBRARY
+              </motion.button>
             </div>
-            
-            <div className="hidden md:block h-8 w-px bg-gray-100 mx-1" />
-
-            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-0.5 md:gap-1">
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -433,7 +453,6 @@ export default function App() {
             >
               <Redo size={14} />
             </motion.button>
-          </div>
 
           <div className="h-8 w-px bg-gray-100 mx-1 hidden sm:block" />
 
@@ -611,106 +630,94 @@ export default function App() {
 
         {/* Programming Canvas (Center) */}
           <div className="flex-1 bg-bg-canvas relative flex flex-col p-8 overflow-hidden">
-            <div className="absolute top-4 right-4 flex gap-4 z-20">
-              <div className="flex items-center bg-white/80 p-1 rounded-full border-2 border-gray-100 backdrop-blur-sm shadow-sm gap-1">
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setRightPanelTab('board')}
-                  className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-secondary text-white shadow-md' : 'text-gray-400 hover:bg-gray-100'}`}
+            <AnimatePresence mode="wait">
+              {workspaceTab === 'blocks' ? (
+                <motion.div 
+                  key="blocks"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="flex-1 flex flex-col"
                 >
-                  BOARD
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setRightPanelTab('code')}
-                  className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-info text-white shadow-md' : 'text-gray-400 hover:bg-gray-100'}`}
+                  {/* Drop Area */}
+                  <motion.div 
+                    id="workspace-area"
+                    ref={setNodeRef}
+                    animate={isSnapping ? { scale: [1, 1.01, 1], backgroundColor: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0)'] } : {}}
+                    transition={{ duration: 0.2 }}
+                    className={`flex-1 rounded-[40px] flex flex-col p-8 overflow-y-auto min-h-0 transition-colors ${blocks.length === 0 ? 'bg-white/30 border-8 border-dashed border-white/50 items-center justify-center' : 'bg-white/10 shadow-inner'}`}
+                  >
+                    <AnimatePresence>
+                      {blocks.length === 0 ? (
+                        <div className="text-center max-w-xs scale-125">
+                          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-info/10">
+                            <Zap className="text-info" size={40} />
+                          </div>
+                          <h2 className="text-xl font-black text-gray-400">Drag a Magic Block here to start your adventure!</h2>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-0 items-start ml-12">
+                          {blocks.map((b, i) => (
+                            <div key={b.id} className="group relative">
+                              <WorkspaceBlock 
+                                id={b.id} 
+                                type={b.type} 
+                                index={i} 
+                                parameters={b.parameters} 
+                                onUpdate={updateBlockParameters}
+                              />
+                              <motion.button 
+                                whileHover={{ scale: 1.2, rotate: 15 }}
+                                whileTap={{ scale: 0.8 }}
+                                onClick={() => removeBlock(b.id)}
+                                className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 bg-accent text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                              >
+                                <Trash2 size={16} />
+                              </motion.button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="hardware"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  className="flex-1 bg-white rounded-[40px] shadow-2xl border-8 border-secondary/20 p-12 flex items-center justify-center relative flex-col overflow-hidden"
                 >
-                  CODE
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Drop Area */}
-            <motion.div 
-              id="workspace-area"
-              animate={isSnapping ? { scale: [1, 1.01, 1], backgroundColor: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0)'] } : {}}
-              transition={{ duration: 0.2 }}
-              className={`flex-1 rounded-[40px] flex flex-col p-8 overflow-y-auto min-h-0 transition-colors ${blocks.length === 0 ? 'bg-white/30 border-8 border-dashed border-white/50 items-center justify-center' : ''}`}
-            >
-              <AnimatePresence>
-                {blocks.length === 0 ? (
-                  <div className="text-center max-w-xs scale-125">
-                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-info/10">
-                      <Zap className="text-info" size={40} />
+                  <div className="absolute top-8 left-12">
+                    <h2 className="text-3xl font-black text-secondary uppercase tracking-tight leading-none">Virtual Arduino Board</h2>
+                    <p className="text-sm font-bold text-gray-400 mt-2">See your circuit connections in high detail!</p>
+                  </div>
+                  <div className="w-full max-w-7xl h-full flex items-center justify-center relative">
+                    <div className="w-full max-w-6xl p-6 bg-gray-50 rounded-[40px] border-4 border-dashed border-gray-200 shadow-inner">
+                      <ArduinoBoard activePins={activePins} />
                     </div>
-                    <h2 className="text-xl font-black text-gray-400">Drag a Magic Block here to start your adventure!</h2>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-0 items-start ml-12">
-                    {blocks.map((b, i) => (
-                      <div key={b.id} className="group relative">
-                        <WorkspaceBlock 
-                          id={b.id} 
-                          type={b.type} 
-                          index={i} 
-                          parameters={b.parameters} 
-                          onUpdate={updateBlockParameters}
-                        />
-                        <motion.button 
-                          whileHover={{ scale: 1.2, rotate: 15 }}
-                          whileTap={{ scale: 0.8 }}
-                          onClick={() => removeBlock(b.id)}
-                          className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 bg-accent text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        >
-                          <Trash2 size={16} />
-                        </motion.button>
-                      </div>
-                    ))}
+                  <div className="absolute bottom-8 right-12 flex gap-4">
+                    <div className="flex items-center gap-3 bg-gray-50 px-6 py-3 rounded-2xl border-2 border-gray-100 shadow-sm">
+                      <div className="w-4 h-4 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_rgba(59,206,172,0.8)]" />
+                      <span className="text-xs font-black text-dark uppercase tracking-widest">Active Pins: {activePins.length > 0 ? activePins.join(', ') : 'Ready'}</span>
+                    </div>
                   </div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </DndContext>
 
         {/* Code & Tutorials Sidebar (Right) */}
         <aside className="w-[300px] bg-white border-l-8 border-secondary flex flex-col shrink-0 overflow-hidden">
-          <div className="flex border-b-4 border-gray-100 h-14 shrink-0">
-            <button 
-              onClick={() => setRightPanelTab('board')}
-              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white text-secondary border-b-4 border-secondary' : 'bg-gray-50 text-gray-400'}`}
-            >
-              Board
-            </button>
-            <button 
-              onClick={() => setRightPanelTab('code')}
-              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-white text-info border-b-4 border-info' : 'bg-gray-50 text-gray-400'}`}
-            >
-              IDE Code
-            </button>
-            <button 
-              onClick={() => setRightPanelTab('tutorial')}
-              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'tutorial' ? 'bg-white text-accent border-b-4 border-accent' : 'bg-gray-50 text-gray-400'}`}
-            >
-              Library
-            </button>
-          </div>
-          
           <div className="p-4 flex-1 flex flex-col min-h-0 overflow-y-auto">
             {rightPanelTab === 'code' && (
               <div className="bg-dark rounded-2xl p-4 flex-1 overflow-auto font-mono text-[10px] shadow-inner mb-6">
                 <pre className="text-secondary/80 whitespace-pre-wrap">
                   {generateArduinoCode(blocks)}
                 </pre>
-              </div>
-            )}
-
-            {rightPanelTab === 'board' && (
-              <div className="flex-1 bg-gray-50 rounded-2xl flex items-center justify-center border-4 border-dashed border-gray-200 mb-6 relative overflow-hidden group">
-                 <div className="absolute top-2 left-2 text-[8px] font-black text-gray-300 uppercase tracking-widest">Board Visualizer</div>
-                 <ArduinoBoard activePins={activePins} />
               </div>
             )}
 

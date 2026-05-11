@@ -213,5 +213,59 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
       { id: '4', type: 'delay', category: 'Control', parameters: { ms: 3000 } },
       { id: '5', type: 'servo_angle', category: 'Motor', parameters: { pin: 10, angle: 135 } }
     ]
+  },
+  {
+    id: 'smart-trash-bin',
+    title: 'Smart Trash Bin',
+    description: 'Open the lid automatically when you wave your hand!',
+    difficulty: 'Medium',
+    color: 'bg-[#FF9F43]',
+    blocks: [
+      { id: '1', type: 'sensor_touch', category: 'Sensors', parameters: { pin: 2 } },
+      { id: '2', type: 'if_pressed', category: 'Logic', parameters: { pin: 2 } },
+      { id: '3', type: 'servo_angle', category: 'Motor', parameters: { pin: 10, angle: 90 } },
+      { id: '4', type: 'delay', category: 'Control', parameters: { ms: 2000 } },
+      { id: '5', type: 'servo_angle', category: 'Motor', parameters: { pin: 10, angle: 0 } }
+    ]
+  },
+  {
+    id: 'obstacle-avoider',
+    title: 'Robot Avoider',
+    description: 'A robot that stops when it hits something!',
+    difficulty: 'Hard',
+    color: 'bg-[#1DD1A1]',
+    blocks: [
+      { id: '1', type: 'sensor_touch', category: 'Sensors', parameters: { pin: 2 } },
+      { id: '2', type: 'motor_run', category: 'Motor', parameters: { pin: 5, speed: 200 } },
+      { id: '3', type: 'if_pressed', category: 'Logic', parameters: { pin: 2 } },
+      { id: '4', type: 'motor_stop', category: 'Motor', parameters: { pin: 5 } },
+      { id: '5', type: 'sound_beep', category: 'Sound', parameters: { pin: 9 } }
+    ]
+  },
+  {
+    id: 'weather-monitor',
+    title: 'Sunny Day Checker',
+    description: 'Check if it is sunny and show it on the display!',
+    difficulty: 'Easy',
+    color: 'bg-[#54A0FF]',
+    blocks: [
+      { id: '1', type: 'sensor_light', category: 'Sensors', parameters: { pin: 'A0' } },
+      { id: '2', type: 'display_clear', category: 'Display', parameters: {} },
+      { id: '3', type: 'display_show', category: 'Display', parameters: { text: "SUNNY DAY?" } }
+    ]
+  },
+  {
+    id: 'simon-says-mini',
+    title: 'Memory Game',
+    description: 'Watch the lights and try to remember the pattern!',
+    difficulty: 'Hard',
+    color: 'bg-[#5F27CD]',
+    blocks: [
+      { id: '1', type: 'led_on', category: 'Lights', parameters: { pin: 13 } },
+      { id: '2', type: 'delay', category: 'Control', parameters: { ms: 500 } },
+      { id: '3', type: 'led_off', category: 'Lights', parameters: { pin: 13 } },
+      { id: '4', type: 'delay', category: 'Control', parameters: { ms: 500 } },
+      { id: '5', type: 'led_on', category: 'Lights', parameters: { pin: 12 } }
+    ]
   }
 ];
