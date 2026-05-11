@@ -10,13 +10,9 @@ interface ArduinoBoardProps {
 export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ activePins }) => {
   return (
     <div className="relative w-full aspect-[1.4/1] bg-[#0A2E36] rounded-[32px] shadow-2xl p-12 overflow-hidden border-[12px] border-[#143D48]">
-      {/* Circuit Trace Background */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <svg width="100%" height="100%" className="stroke-white/20">
-          <path d="M0 100 L200 100 M100 0 L100 200" strokeWidth="4" fill="none" />
-          <path d="M40 40 L160 160 M160 40 L40 160" strokeWidth="2" fill="none" />
-          <circle cx="100" cy="100" r="80" strokeWidth="2" fill="none" />
-        </svg>
+      {/* Clean Grid Background */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       </div>
 
       {/* Main Board Label */}
@@ -50,23 +46,33 @@ export const ArduinoBoard: React.FC<ArduinoBoardProps> = ({ activePins }) => {
       </div>
 
       {/* Digital Pins Header */}
-      <div className="absolute top-[120px] right-12 flex flex-col gap-3">
-        {[13, 12, 11, 10, 9, 8].map(p => (
-          <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
-        ))}
-      </div>
-      
-      <div className="absolute top-[120px] right-32 flex flex-col gap-3">
-        {[7, 6, 5, 4, 3, 2].map(p => (
-          <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
-        ))}
+      <div className="absolute top-[30px] right-12 flex items-center gap-6 bg-dark/20 p-2 rounded-xl border border-white/5">
+        <div className="flex flex-col gap-2">
+          <span className="text-[8px] font-black text-white/30 uppercase text-center">Group A</span>
+          <div className="flex flex-col gap-2">
+            {[13, 12, 11, 10, 9, 8].map(p => (
+              <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-[8px] font-black text-white/30 uppercase text-center">Group B</span>
+          <div className="flex flex-col gap-2">
+            {[7, 6, 5, 4, 3, 2].map(p => (
+              <PinHeader key={p} label={p.toString()} isActive={activePins.includes(p)} />
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Analog Pins Header (Bottom Right) */}
-      <div className="absolute bottom-12 right-12 flex gap-3">
-        {[5, 4, 3, 2, 1, 0].map(p => (
-          <PinHeader key={`A${p}`} label={`A${p}`} isActive={activePins.includes(18 + p)} />
-        ))}
+      {/* Analog Pins Header (Bottom Center-ish) */}
+      <div className="absolute bottom-12 right-12 flex flex-col gap-2 bg-dark/20 p-2 rounded-xl border border-white/5">
+        <span className="text-[8px] font-black text-white/30 uppercase text-center tracking-widest">Analog Input</span>
+        <div className="flex gap-2">
+          {[5, 4, 3, 2, 1, 0].map(p => (
+            <PinHeader key={`A${p}`} label={`A${p}`} isActive={activePins.includes(18 + p)} />
+          ))}
+        </div>
       </div>
 
       {/* Main Microcontroller Chip */}

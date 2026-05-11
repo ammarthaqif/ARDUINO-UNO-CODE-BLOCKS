@@ -66,41 +66,41 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.5 }}
       className={cn(
-        "relative w-full h-16 rounded-xl border-b-4 border-black/20 flex items-center justify-between px-6 shadow-md shadow-black/5 transition-all",
+        "relative w-[480px] h-20 rounded-2xl border-b-8 border-black/20 flex items-center justify-between px-8 shadow-xl shadow-black/10 transition-all mb-4",
         metadata.color,
         "text-white"
       )}
     >
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-white/20 rounded-xl">
-          <Icon size={24} />
+      <div className="flex items-center gap-6">
+        <div className="p-4 bg-white/20 rounded-2xl">
+          <Icon size={32} />
         </div>
         <div>
-          <h4 className="font-extrabold text-lg leading-tight">{metadata.label}</h4>
-          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">#{index + 1}</p>
+          <h4 className="font-black text-xl leading-tight tracking-tight">{metadata.label}</h4>
+          <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.2em]">Step #{index + 1}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-6">
          {parameters?.pin !== undefined && (
            <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Pin</span>
+             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Target Pin</span>
              <select 
-               className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-[10px] font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none appearance-none cursor-pointer hover:bg-black/30" 
+               className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-xs font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none appearance-none cursor-pointer hover:bg-black/40 transition-colors shadow-inner" 
                value={parameters.pin}
                onChange={(e) => {
                  const val = e.target.value;
                  handleChange('pin', val.startsWith('A') ? val : parseInt(val));
                }}
              >
-               <optgroup label="Digital Pins" className="bg-gray-800 text-white/50 text-[8px]">
+               <optgroup label="Digital Output" className="bg-gray-900 text-white/50 text-[9px]">
                  {[13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(p => (
-                   <option key={p} value={p} className="text-white text-xs">Digital {p}</option>
+                   <option key={p} value={p} className="text-white font-bold text-sm">Pin D{p}</option>
                  ))}
                </optgroup>
-               <optgroup label="Analog Pins" className="bg-gray-800 text-white/50 text-[8px]">
+               <optgroup label="Analog Input" className="bg-gray-900 text-white/50 text-[9px]">
                  {['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].map(p => (
-                   <option key={p} value={p} className="text-white text-xs">Analog {p}</option>
+                   <option key={p} value={p} className="text-white font-bold text-sm">Pin {p}</option>
                  ))}
                </optgroup>
              </select>
@@ -108,10 +108,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          )}
          {parameters?.ms !== undefined && (
            <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">MS</span>
+             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Delay Ms</span>
              <input 
                type="number" 
-               className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+               className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                value={parameters.ms}
                onChange={(e) => handleChange('ms', parseInt(e.target.value) || 0)}
              />
@@ -119,10 +119,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          )}
          {parameters?.value !== undefined && (
            <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Value</span>
+             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Value</span>
              <input 
                type="number" 
-               className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+               className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                value={parameters.value}
                onChange={(e) => handleChange('value', parseInt(e.target.value) || 0)}
              />
@@ -130,10 +130,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          )}
          {parameters?.name !== undefined && (
            <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Variable</span>
+             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Variable</span>
              <input 
                type="text" 
-               className="w-20 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+               className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                value={parameters.name}
                onChange={(e) => handleChange('name', e.target.value)}
              />
@@ -141,10 +141,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          )}
          {parameters?.text !== undefined && (
            <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Text</span>
+             <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Display Text</span>
              <input 
                type="text" 
-               className="w-24 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+               className="w-32 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                value={parameters.text}
                onChange={(e) => handleChange('text', e.target.value)}
              />
@@ -152,10 +152,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
          )}
          {parameters?.frequency !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Hz</span>
+              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Pitch (Hz)</span>
               <input 
                 type="number" 
-                className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+                className="w-24 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                 value={parameters.frequency}
                 onChange={(e) => handleChange('frequency', parseInt(e.target.value) || 0)}
               />
@@ -163,10 +163,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
           )}
           {parameters?.speed !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Speed</span>
+              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Power</span>
               <input 
                 type="number" 
-                className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+                className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                 value={parameters.speed}
                 onChange={(e) => handleChange('speed', parseInt(e.target.value) || 0)}
               />
@@ -174,10 +174,10 @@ export const WorkspaceBlock = ({ id, type, index, parameters, onUpdate }: { id: 
           )}
           {parameters?.angle !== undefined && (
             <div className="flex flex-col items-center">
-              <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">Deg</span>
+              <span className="text-[9px] font-black opacity-50 uppercase tracking-widest mb-1">Angle°</span>
               <input 
                 type="number" 
-                className="w-16 bg-black/20 border-none rounded-md px-1 py-0.5 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-white/50 focus:outline-none" 
+                className="w-20 bg-black/30 border-2 border-white/10 rounded-xl px-2 py-1.5 text-sm font-mono font-black text-center focus:ring-2 focus:ring-white/50 focus:outline-none shadow-inner" 
                 value={parameters.angle}
                 onChange={(e) => handleChange('angle', parseInt(e.target.value) || 0)}
               />
