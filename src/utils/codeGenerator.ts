@@ -82,6 +82,46 @@ export function generateArduinoCode(blocks: BlockInstance[]): string {
         setupLines.push(`  Serial.begin(9600);`);
         return `${indent}Serial.println("${msg}");`;
 
+      case 'sound_beep':
+        const beepPin = block.parameters.pin || 9;
+        setupLines.push(`  pinMode(${beepPin}, OUTPUT);`);
+        return `${indent}tone(${beepPin}, 1000, 200); // Beep!`;
+
+      case 'sound_tone':
+        const tonePin = block.parameters.pin || 9;
+        const freq = block.parameters.frequency || 440;
+        setupLines.push(`  pinMode(${tonePin}, OUTPUT);`);
+        return `${indent}tone(${tonePin}, ${freq}); // Play note`;
+
+      case 'motor_run':
+        const mPin = block.parameters.pin || 5;
+        const speed = block.parameters.speed || 255;
+        setupLines.push(`  pinMode(${mPin}, OUTPUT);`);
+        return `${indent}analogWrite(${mPin}, ${speed}); // Motor Go!`;
+
+      case 'motor_stop':
+        const msPin = block.parameters.pin || 5;
+        setupLines.push(`  pinMode(${msPin}, OUTPUT);`);
+        return `${indent}digitalWrite(${msPin}, LOW); // Motor Stop`;
+
+      case 'servo_angle':
+        const sPin = block.parameters.pin || 10;
+        const angle = block.parameters.angle || 90;
+        variableLines.add(`#include <Servo.h>\nServo myServo;`);
+        setupLines.push(`  myServo.attach(${sPin});`);
+        return `${indent}myServo.write(${angle}); // Servo move`;
+
+      case 'display_clear':
+        variableLines.add(`#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\nAdafruit_SSD1306 display(128, 64, &Wire, -1);`);
+        setupLines.push(`  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);\n  display.clearDisplay();`);
+        return `${indent}display.clearDisplay();\n${indent}display.display();`;
+
+      case 'display_show':
+        const txt = block.parameters.text || "Hello!";
+        variableLines.add(`#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\nAdafruit_SSD1306 display(128, 64, &Wire, -1);`);
+        setupLines.push(`  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);\n  display.clearDisplay();`);
+        return `${indent}display.setTextSize(1);\n${indent}display.setTextColor(WHITE);\n${indent}display.setCursor(0,0);\n${indent}display.println("${txt}");\n${indent}display.display();`;
+
       case 'sensor_light':
         const lPin = block.parameters.pin || 'A0';
         return `${indent}analogRead(${lPin}); // Reading light level`;

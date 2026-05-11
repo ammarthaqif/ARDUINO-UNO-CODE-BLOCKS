@@ -64,8 +64,10 @@ export default function App() {
   const [blocks, setBlocks] = useState<BlockInstance[]>([]);
   const [history, setHistory] = useState<BlockInstance[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [showCode, setShowCode] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'code' | 'board' | 'tutorial'>('code');
   const [activeTab, setActiveTab] = useState<'workspace' | 'tutorial'>('workspace');
+  const [projectTitle, setProjectTitle] = useState("My Arduino Project");
+  const [projectMetadata, setProjectMetadata] = useState<{ createdAt?: any, updatedAt?: any }>({});
   const [user, setUser] = useState<User | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [ shareId, setShareId] = useState<string | null>(null);
@@ -179,6 +181,11 @@ export default function App() {
     }
   };
 
+  const updateBlockParameters = (id: string, parameters: any) => {
+    const newBlocks = blocks.map(b => b.id === id ? { ...b, parameters } : b);
+    updateBlocksWithHistory(newBlocks);
+  };
+
   const loadProject = async (id: string) => {
     try {
       const docRef = doc(db, 'projects', id);
@@ -187,6 +194,11 @@ export default function App() {
         const data = docSnap.data();
         const loadedBlocks = JSON.parse(data.blocks);
         setBlocks(loadedBlocks);
+        setProjectTitle(data.title || "Untitled Project");
+        setProjectMetadata({
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        });
         setHistory([loadedBlocks]);
         setHistoryIndex(0);
         setShareId(id);
@@ -219,13 +231,18 @@ export default function App() {
     
     try {
       await setDoc(doc(db, 'projects', id), {
-        title: "My Arduino Project",
+        title: projectTitle,
         blocks: JSON.stringify(blocks),
         creatorUid: user.uid,
         creatorEmail: user.email,
-        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdAt: projectMetadata.createdAt || serverTimestamp(),
       });
       setShareId(id);
+      setProjectMetadata(prev => ({
+        ...prev,
+        updatedAt: { seconds: Math.floor(Date.now() / 1000) } // Optimistic update
+      }));
       confetti({ particleCount: 150, spread: 80 });
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, projectPath);
@@ -245,8 +262,8 @@ export default function App() {
   // Track active pins for the visualizer
   const activePins = Array.from(new Set(
     blocks
-      .filter(b => b.type === 'led_on')
-      .map(b => (b.parameters.pin as number) || 13)
+      .filter(b => ['led_on', 'sound_tone', 'sound_beep', 'motor_run', 'servo_angle'].includes(b.type))
+      .map(b => (b.parameters.pin as number) || (b.type === 'servo_angle' ? 10 : (b.type.includes('sound') ? 9 : 13)))
   ));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -268,6 +285,10 @@ export default function App() {
         defaultParams.outMin = 0;
         defaultParams.outMax = 255;
       }
+      if (type === 'sound_tone') { defaultParams.pin = 9; defaultParams.frequency = 440; }
+      if (type === 'motor_run') { defaultParams.pin = 5; defaultParams.speed = 255; }
+      if (type === 'servo_angle') { defaultParams.pin = 10; defaultParams.angle = 90; }
+      if (type === 'display_show') { defaultParams.text = "Hello!"; }
 
       const newBlock: BlockInstance = {
         id: `block-${Date.now()}`,
@@ -317,15 +338,65 @@ export default function App() {
             <Rocket className="text-white fill-white" size={30} />
           </div>
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-dark">SparkyCode <span className="text-info tracking-wider">Explorer</span></h1>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-dark">Arduino Uno <span className="text-info tracking-wider">Code Blocks</span></h1>
             <div className="flex items-center gap-2">
-              <span className="bg-success/20 text-success px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest">Project: My Blinking Star 🌟</span>
+              <input 
+                type="text"
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                className="bg-success/10 text-success px-3 py-1 rounded-lg text-sm font-extrabold focus:outline-none focus:ring-2 focus:ring-success/50 border-none w-64"
+                placeholder="Project Name..."
+              />
+              {projectMetadata.updatedAt && (
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden md:inline">
+                  Last edit: {new Date(projectMetadata.updatedAt.seconds * 1000).toLocaleString()}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setRightPanelTab('board')}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white shadow-sm text-secondary' : 'text-gray-500'}`}
+              >
+                BOARD
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setRightPanelTab('code')}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-white shadow-sm text-info' : 'text-gray-500'}`}
+              >
+                CODE
+              </motion.button>
+            </div>
+            
+            <div className="h-10 w-px bg-gray-100 mx-2" />
+
+            <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (window.confirm("Start a new project? Unsaved changes will be lost.")) {
+                  setBlocks([]);
+                  setHistory([[]]);
+                  setHistoryIndex(0);
+                  setShareId(null);
+                  setProjectTitle("My Arduino Project");
+                  setProjectMetadata({});
+                }
+              }}
+              className="px-4 py-2 hover:bg-white hover:shadow-sm rounded-lg text-[10px] font-black text-dark tracking-widest transition-all"
+            >
+              NEW PROJECT
+            </motion.button>
+            <div className="w-px h-6 bg-gray-200 mx-1" />
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -409,8 +480,9 @@ export default function App() {
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        {/* Toolbox Sidebar (Left) */}
-        <aside className="w-[280px] bg-white border-r-8 border-[#FAB1A0] p-4 flex flex-col gap-6 shrink-0 overflow-y-auto">
+        <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+          {/* Toolbox Sidebar (Left) */}
+          <aside className="w-[280px] bg-white border-r-8 border-[#FAB1A0] p-4 flex flex-col gap-6 shrink-0 overflow-y-auto">
           <div className="space-y-6">
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">💡 LIGHTS</p>
@@ -467,6 +539,31 @@ export default function App() {
                 <ToolboxBlock type="serial_say" />
               </div>
             </div>
+
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">🔊 SOUND</p>
+              <div className="flex flex-col gap-3">
+                <ToolboxBlock type="sound_beep" />
+                <ToolboxBlock type="sound_tone" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">🌀 MOTOR</p>
+              <div className="flex flex-col gap-3">
+                <ToolboxBlock type="motor_run" />
+                <ToolboxBlock type="motor_stop" />
+                <ToolboxBlock type="servo_angle" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">🖥️ DISPLAY</p>
+              <div className="flex flex-col gap-3">
+                <ToolboxBlock type="display_clear" />
+                <ToolboxBlock type="display_show" />
+              </div>
+            </div>
           </div>
 
           <div className="h-px bg-gray-100 my-2" />
@@ -507,17 +604,26 @@ export default function App() {
         </aside>
 
         {/* Programming Canvas (Center) */}
-        <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
           <div className="flex-1 bg-bg-canvas relative flex flex-col p-8 overflow-hidden">
             <div className="absolute top-4 right-4 flex gap-4 z-20">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowCode(!showCode)}
-                className="px-4 py-2 bg-white/80 rounded-full border-2 border-sky-200 text-sky-600 text-xs font-black uppercase tracking-wider backdrop-blur-sm shadow-sm"
-              >
-                {showCode ? 'HIDE CODE' : 'VIEW CODE'}
-              </motion.button>
+              <div className="flex items-center bg-white/80 p-1 rounded-full border-2 border-gray-100 backdrop-blur-sm shadow-sm gap-1">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setRightPanelTab('board')}
+                  className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-secondary text-white shadow-md' : 'text-gray-400 hover:bg-gray-100'}`}
+                >
+                  BOARD
+                </motion.button>
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setRightPanelTab('code')}
+                  className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-info text-white shadow-md' : 'text-gray-400 hover:bg-gray-100'}`}
+                >
+                  CODE
+                </motion.button>
+              </div>
             </div>
 
             {/* Drop Area */}
@@ -539,7 +645,13 @@ export default function App() {
                   <div className="flex flex-col gap-0 items-start ml-12">
                     {blocks.map((b, i) => (
                       <div key={b.id} className="group relative">
-                        <WorkspaceBlock id={b.id} type={b.type} index={i} parameters={b.parameters} />
+                        <WorkspaceBlock 
+                          id={b.id} 
+                          type={b.type} 
+                          index={i} 
+                          parameters={b.parameters} 
+                          onUpdate={updateBlockParameters}
+                        />
                         <motion.button 
                           whileHover={{ scale: 1.2, rotate: 15 }}
                           whileTap={{ scale: 0.8 }}
@@ -554,30 +666,71 @@ export default function App() {
                 )}
               </AnimatePresence>
             </motion.div>
-
-            {/* Visual Circuit Preview (Bottom Left) */}
-            <div className="absolute bottom-8 left-8 w-[280px] bg-white/90 p-4 rounded-3xl border-4 border-secondary shadow-xl z-20 backdrop-blur-sm">
-              <p className="text-[10px] font-black text-secondary uppercase mb-3 px-2 tracking-widest">My Circuit Board</p>
-              <div className="h-[140px] bg-gray-50 rounded-2xl relative overflow-hidden flex items-center justify-center border-2 border-gray-100">
-                <ArduinoBoard activePins={activePins} />
-              </div>
-            </div>
           </div>
         </DndContext>
 
         {/* Code & Tutorials Sidebar (Right) */}
         <aside className="w-[300px] bg-white border-l-8 border-secondary flex flex-col shrink-0 overflow-hidden">
-          <div className="flex border-b-4 border-gray-100 h-12 shrink-0">
-            <button className="flex-1 bg-white font-black text-[10px] text-info uppercase border-b-4 border-info tracking-widest">IDE Code</button>
-            <button className="flex-1 bg-gray-50 font-bold text-[10px] text-gray-400 uppercase tracking-widest">Tutorials</button>
+          <div className="flex border-b-4 border-gray-100 h-14 shrink-0">
+            <button 
+              onClick={() => setRightPanelTab('board')}
+              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'board' ? 'bg-white text-secondary border-b-4 border-secondary' : 'bg-gray-50 text-gray-400'}`}
+            >
+              Board
+            </button>
+            <button 
+              onClick={() => setRightPanelTab('code')}
+              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'code' ? 'bg-white text-info border-b-4 border-info' : 'bg-gray-50 text-gray-400'}`}
+            >
+              IDE Code
+            </button>
+            <button 
+              onClick={() => setRightPanelTab('tutorial')}
+              className={`flex-1 font-black text-[10px] uppercase tracking-widest transition-all ${rightPanelTab === 'tutorial' ? 'bg-white text-accent border-b-4 border-accent' : 'bg-gray-50 text-gray-400'}`}
+            >
+              Library
+            </button>
           </div>
           
           <div className="p-4 flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <div className="bg-dark rounded-2xl p-4 h-[400px] shrink-0 overflow-auto font-mono text-[10px] shadow-inner mb-6">
-              <pre className="text-secondary/80">
-                {generateArduinoCode(blocks)}
-              </pre>
-            </div>
+            {rightPanelTab === 'code' && (
+              <div className="bg-dark rounded-2xl p-4 flex-1 overflow-auto font-mono text-[10px] shadow-inner mb-6">
+                <pre className="text-secondary/80 whitespace-pre-wrap">
+                  {generateArduinoCode(blocks)}
+                </pre>
+              </div>
+            )}
+
+            {rightPanelTab === 'board' && (
+              <div className="flex-1 bg-gray-50 rounded-2xl flex items-center justify-center border-4 border-dashed border-gray-200 mb-6 relative overflow-hidden group">
+                 <div className="absolute top-2 left-2 text-[8px] font-black text-gray-300 uppercase tracking-widest">Board Visualizer</div>
+                 <ArduinoBoard activePins={activePins} />
+              </div>
+            )}
+
+            {rightPanelTab === 'tutorial' && (
+              <div className="flex-1 overflow-y-auto">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Quick Starts</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {PROJECT_TEMPLATES.map(tpl => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => {
+                        updateBlocksWithHistory(tpl.blocks);
+                        confetti({ particleCount: 50, spread: 40 });
+                      }}
+                      className={`p-4 rounded-2xl ${tpl.color} text-white font-bold text-left hover:scale-[1.02] active:scale-95 transition-all shadow-sm border-b-4 border-black/20`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs uppercase font-black opacity-70">{tpl.difficulty}</span>
+                        <Play size={14} />
+                      </div>
+                      <h4 className="text-sm leading-tight">{tpl.title}</h4>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-auto bg-[#E1F5FE] p-4 rounded-2xl border-2 border-sky-100">
               <p className="font-black text-info uppercase text-[10px] mb-2 italic underline underline-offset-4 tracking-widest">Next Challenge</p>

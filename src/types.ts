@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type BlockCategory = 'Lights' | 'Control' | 'Sensors' | 'Logic' | 'Variables' | 'Communication';
+export type BlockCategory = 'Lights' | 'Control' | 'Sensors' | 'Logic' | 'Variables' | 'Communication' | 'Sound' | 'Motor' | 'Display';
 
 export type BlockType = 
   | 'led_on' 
@@ -21,7 +21,14 @@ export type BlockType =
   | 'map_value'
   | 'var_set'
   | 'var_get'
-  | 'serial_say';
+  | 'serial_say'
+  | 'sound_beep'
+  | 'sound_tone'
+  | 'motor_run'
+  | 'motor_stop'
+  | 'servo_angle'
+  | 'display_clear'
+  | 'display_show';
 
 export interface BlockInstance {
   id: string;
@@ -72,4 +79,11 @@ export const BLOCK_METADATA: Record<BlockType, { label: string; color: string; i
   var_set: { label: 'Set Memory', color: 'bg-[#E17055]', icon: 'Save' },
   var_get: { label: 'Use Memory', color: 'bg-[#E17055]', icon: 'CloudDownload' },
   serial_say: { label: 'Say Message', color: 'bg-[#2D3436]', icon: 'MessageSquare' },
+  sound_beep: { label: 'Beep', color: 'bg-[#FF9F43]', icon: 'Volume2' },
+  sound_tone: { label: 'Play Note', color: 'bg-[#FF9F43]', icon: 'Music' },
+  motor_run: { label: 'Motor On', color: 'bg-[#1DD1A1]', icon: 'Wind' },
+  motor_stop: { label: 'Motor Off', color: 'bg-[#1DD1A1]', icon: 'Octagon' },
+  servo_angle: { label: 'Set Servo', color: 'bg-[#1DD1A1]', icon: 'Compass' },
+  display_clear: { label: 'Clear Screen', color: 'bg-[#54A0FF]', icon: 'Eraser' },
+  display_show: { label: 'Show Text', color: 'bg-[#54A0FF]', icon: 'Monitor' },
 };
